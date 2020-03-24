@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -67,7 +68,7 @@ namespace LoggerInspector
             var newRoot = _walker.Visit(root);
 
             // write to file
-            await using var writer = new StreamWriter(filePath, false);
+            await using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
             newRoot.WriteTo(writer);
             _logger.LogInformation("wrote to file {filePath}", filePath);
             _logger.LogInformation("**********done**********");
