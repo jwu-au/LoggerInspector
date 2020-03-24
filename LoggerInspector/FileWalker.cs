@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -341,7 +342,7 @@ namespace LoggerInspector
         private bool IsException(ITypeSymbol symbol)
         {
             if (symbol == null) return false;
-            if (symbol.Name == "Exception") return true;
+            if (symbol.Name.EndsWith(nameof(Exception))) return true;
             return IsException(symbol.BaseType);
         }
     }
