@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace LoggerInspector
 {
@@ -29,11 +30,11 @@ namespace LoggerInspector
 
             // run
             var mainLogger = serviceProvider.GetRequiredService<ILogger<Program>>();
-            var file = serviceProvider.GetRequiredService<FileInspector>();
-            await Run(mainLogger, file);
+            var fileInspector = serviceProvider.GetRequiredService<FileInspector>();
+            await Run(mainLogger, fileInspector);
         }
 
-        static async Task Run(ILogger<Program> logger, FileInspector fileInspector)
+        static async Task Run(ILogger logger, FileInspector fileInspector)
         {
             while (true)
             {
