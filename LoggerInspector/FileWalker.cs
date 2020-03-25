@@ -252,7 +252,8 @@ namespace LoggerInspector
                                 return typeName == nameof(String) &&
                                        (kind == SyntaxKind.StringLiteralExpression ||
                                         kind == SyntaxKind.InterpolatedStringExpression ||
-                                        kind == SyntaxKind.AddExpression);
+                                        kind == SyntaxKind.AddExpression ||
+                                        kind == SyntaxKind.IdentifierName);
                             });
                         var messageArgumentExpressionKind = messageArgumentSyntax.Expression.Kind();
 
@@ -331,6 +332,13 @@ namespace LoggerInspector
                         {
                             var str = messageArgumentSyntax.Expression.ToString();
                             _logger.LogWarning("adding message param with string concat: {message}", str);
+                            newArgList = newArgList.AddArguments(messageArgumentSyntax);
+                        }
+
+                        if (messageArgumentExpressionKind == SyntaxKind.IdentifierName)
+                        {
+                            var str = messageArgumentSyntax.Expression.ToString();
+                            _logger.LogInformation("adding message param: {message}", str);
                             newArgList = newArgList.AddArguments(messageArgumentSyntax);
                         }
 
