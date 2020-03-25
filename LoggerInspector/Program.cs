@@ -38,7 +38,7 @@ namespace LoggerInspector
         {
             while (true)
             {
-                logger.LogInformation("input file path or [Enter] to exit");
+                logger.LogInformation("input file or folder path or [Enter] to exit");
                 var path = Console.ReadLine();
 
                 // exit
