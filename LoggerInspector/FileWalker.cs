@@ -225,6 +225,7 @@ namespace LoggerInspector
                         var exceptionArgumentSyntax = argumentList.Arguments.FirstOrDefault(x => IsException(SemanticModel.GetTypeInfo(x.Expression).Type));
                         if (exceptionArgumentSyntax != null)
                         {
+                            _logger.LogInformation("found exception param: {name}", exceptionArgumentSyntax.ToString());
                             newArgList = newArgList.AddArguments(exceptionArgumentSyntax);
                         }
 
