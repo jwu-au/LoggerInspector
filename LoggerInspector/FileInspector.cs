@@ -16,6 +16,8 @@ namespace LoggerInspector
         private readonly ILogger<FileInspector> _logger;
         private readonly IServiceProvider _serviceProvider;
 
+        private Compilation _compilation;
+
         public FileInspector(ILogger<FileInspector> logger, IServiceProvider serviceProvider)
         {
             _logger = logger;
@@ -26,10 +28,36 @@ namespace LoggerInspector
         {
             _logger.LogInformation("analyzing {filePath}", filePath);
 
+            // init
+            if (!InitializeCompilation(filePath)) return;
+
             // build syntax tree
             var code = File.ReadAllText(filePath);
             SyntaxTree tree = CSharpSyntaxTree.ParseText(code);
             CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
+
+            // symbol
+            var walker = _serviceProvider.GetRequiredService<FileWalker>();
+            var semanticModel = _compilation.AddSyntaxTrees(tree).GetSemanticModel(tree);
+            walker.SemanticModel = semanticModel;
+
+            // visiting tree
+            var newRoot = walker.Visit(root);
+
+            // write to file
+            if (walker.IsUpdated)
+            {
+                await using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
+                newRoot.WriteTo(writer);
+                _logger.LogInformation("wrote to file {filePath}", filePath);
+            }
+
+            _logger.LogInformation("******************** done ********************");
+        }
+
+        private bool InitializeCompilation(string filePath)
+        {
+            if (_compilation != null) return true;
 
             // search bin folder
             var binPath = filePath;
@@ -52,7 +80,7 @@ namespace LoggerInspector
             if (lastIndexOfSrc == -1)
             {
                 _logger.LogError("drachma bin folder not found as per file '{filePath}}'", filePath);
-                return;
+                return false;
             }
 
             // symbol
@@ -66,26 +94,9 @@ namespace LoggerInspector
 
             _logger.LogInformation("found {count} dll(s) for symbols", refs.Length);
             var metas = refs.Select(x => MetadataReference.CreateFromFile(x));
-            var compilation = CSharpCompilation.Create("Logger")
-                .AddReferences(metas)
-                .AddSyntaxTrees(tree);
-            var semanticModel = compilation.GetSemanticModel(tree);
-
-            var walker = _serviceProvider.GetRequiredService<FileWalker>();
-            walker.SemanticModel = semanticModel;
-
-            // visiting tree
-            var newRoot = walker.Visit(root);
-
-            // write to file
-            if (walker.IsUpdated)
-            {
-                await using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
-                newRoot.WriteTo(writer);
-                _logger.LogInformation("wrote to file {filePath}", filePath);
-            }
-
-            _logger.LogInformation("******************** done ********************");
+            _compilation = CSharpCompilation.Create("Logger").AddReferences(metas);
+            _logger.LogInformation("_compilation has been initialized");
+            return true;
         }
     }
 }
