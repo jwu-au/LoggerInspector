@@ -54,6 +54,7 @@ namespace LoggerInspector
                 {
                     logger.LogWarning("path '{path}' not found, try again", path);
                     path = Console.ReadLine();
+                    isDir = Directory.Exists(path);
                 }
 
                 // collect files
