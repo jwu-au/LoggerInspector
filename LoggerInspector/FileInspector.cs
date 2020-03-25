@@ -1,10 +1,12 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace LoggerInspector
@@ -12,12 +14,12 @@ namespace LoggerInspector
     public class FileInspector
     {
         private readonly ILogger<FileInspector> _logger;
-        private readonly FileWalker _walker;
+        private readonly IServiceProvider _serviceProvider;
 
-        public FileInspector(ILogger<FileInspector> logger, FileWalker walker)
+        public FileInspector(ILogger<FileInspector> logger, IServiceProvider serviceProvider)
         {
             _logger = logger;
-            _walker = walker;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task Inspect(string filePath)
@@ -68,10 +70,12 @@ namespace LoggerInspector
                 .AddReferences(metas)
                 .AddSyntaxTrees(tree);
             var semanticModel = compilation.GetSemanticModel(tree);
-            _walker.SemanticModel = semanticModel;
+
+            var walker = _serviceProvider.GetRequiredService<FileWalker>();
+            walker.SemanticModel = semanticModel;
 
             // visiting tree
-            var newRoot = _walker.Visit(root);
+            var newRoot = walker.Visit(root);
 
             // write to file
             await using var writer = new StreamWriter(filePath, false, Encoding.UTF8);

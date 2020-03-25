@@ -24,7 +24,7 @@ namespace LoggerInspector
             services.AddLogging(builder => builder.AddSerilog(logger));
 
             services.AddSingleton<FileInspector>();
-            services.AddSingleton<FileWalker>();
+            services.AddTransient<FileWalker>();
 
             await using var serviceProvider = services.BuildServiceProvider();
 
