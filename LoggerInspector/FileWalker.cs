@@ -234,6 +234,7 @@ namespace LoggerInspector
                         // args
                         var argumentList = invocationExpressionSyntax.ArgumentList;
                         var newArgList = ArgumentList(SeparatedList<ArgumentSyntax>());
+                        var argumentsToAdd = new List<ArgumentSyntax>();
 
                         // find exception parameter
                         var exceptionArgumentSyntax = argumentList.Arguments.FirstOrDefault(x => IsException(SemanticModel.GetTypeInfo(x.Expression).Type));
@@ -264,7 +265,7 @@ namespace LoggerInspector
 
                             var indexStr = $"{{{index++}}}";
                             var foundIndex = str.IndexOf(indexStr);
-                            var argumentsToAdd = new List<ArgumentSyntax>();
+
                             while (foundIndex != -1)
                             {
                                 // find argument to replace index
@@ -301,7 +302,6 @@ namespace LoggerInspector
                             var str = string.Concat(syntax.Contents.Select(x => x.ToString()));
 
                             // fetch param from interpolation string
-                            var argumentsToAdd = new List<ArgumentSyntax>();
                             var interpolationSyntaxes = syntax.Contents.OfType<InterpolationSyntax>();
                             foreach (var interpolationSyntax in interpolationSyntaxes)
                             {
@@ -348,6 +348,16 @@ namespace LoggerInspector
                                 .WithLeadingTrivia(node.Expression.GetLeadingTrivia())
                                 .WithTrailingTrivia(node.Expression.GetTrailingTrivia())
                             ;
+
+                        // output skipped arguments
+                        var skippedArguments = argumentList.Arguments
+                            .Except(new[] {exceptionArgumentSyntax, messageArgumentSyntax})
+                            .Except(argumentsToAdd)
+                            .ToList();
+                        foreach (var skippedArgument in skippedArguments)
+                        {
+                            _logger.LogWarning("skipped argument: {argument}", skippedArgument.ToString());
+                        }
 
                         _logger.LogInformation("refactored: {statement}", expression.ToString());
                         _logger.LogInformation("└─────────────────────────┘");
