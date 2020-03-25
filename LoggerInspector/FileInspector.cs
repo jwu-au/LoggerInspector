@@ -30,34 +30,40 @@ namespace LoggerInspector
             CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
 
             // search bin folder
-            var searchPath = filePath;
-            var lastIndexOfSrc = searchPath.LastIndexOf("src");
+            var binPath = filePath;
+            var lastIndexOfSrc = binPath.LastIndexOf("src");
             while (lastIndexOfSrc >= 0)
             {
-                var testPath = searchPath.Substring(0, lastIndexOfSrc);
-                testPath = Path.Combine(testPath, "src\\Drachma.Web\\bin");
+                binPath = binPath.Substring(0, lastIndexOfSrc);
+                var testPath = Path.Combine(binPath, "src\\Drachma.Web\\bin");
                 if (Directory.Exists(testPath))
                 {
-                    searchPath = testPath;
-                    _logger.LogInformation("found drachma bin folder {searchPath}", searchPath);
+                    binPath = testPath;
+                    _logger.LogInformation("found drachma bin folder {searchPath}", binPath);
                     break;
                 }
 
                 // next
-                searchPath = testPath;
-                lastIndexOfSrc = searchPath.LastIndexOf("src");
+                lastIndexOfSrc = binPath.LastIndexOf("src");
             }
 
             if (lastIndexOfSrc == -1)
             {
-                _logger.LogError("drachma bin folder not found for file path", filePath);
+                _logger.LogError("drachma bin folder not found as per file '{filePath}}'", filePath);
                 return;
             }
 
             // symbol
-            var refs = Directory.GetFiles(searchPath, "*.dll");
+            var refs = Directory.GetFiles(binPath, "*.dll", SearchOption.AllDirectories);
+            const string frameworkFolder = "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\";
+            if (Directory.Exists(frameworkFolder))
+            {
+                _logger.LogInformation("using framework folder {path}", frameworkFolder);
+                refs = refs.Union(Directory.GetFiles(frameworkFolder, "*.dll", SearchOption.AllDirectories)).ToArray();
+            }
+
             _logger.LogInformation("found {count} dll(s) for symbols", refs.Length);
-            var metas = refs.Select(x => MetadataReference.CreateFromFile(x)).Union(new[] {MetadataReference.CreateFromFile(typeof(object).Assembly.Location)});
+            var metas = refs.Select(x => MetadataReference.CreateFromFile(x));
             var compilation = CSharpCompilation.Create("Logger")
                 .AddReferences(metas)
                 .AddSyntaxTrees(tree);
