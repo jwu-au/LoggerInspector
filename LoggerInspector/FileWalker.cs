@@ -11,6 +11,8 @@ namespace LoggerInspector
 {
     public class FileWalker : CSharpSyntaxRewriter
     {
+        private readonly IList<string> _updateClasses = new List<string>();
+
         private readonly ILogger<FileWalker> _logger;
 
         public FileWalker(ILogger<FileWalker> logger, bool visitIntoStructuredTrivia = false) : base(visitIntoStructuredTrivia)
@@ -68,6 +70,13 @@ namespace LoggerInspector
             var exists = fieldDeclarationSyntaxes.Any(x => x.Declaration.Variables.Any(y => y.ToString() == "_logger"));
             if (!exists)
             {
+                var className = node.Identifier.Text;
+                if (!_updateClasses.Contains(className))
+                {
+                    _logger.LogWarning("skipping class '{className}' for adding logger field", className);
+                    return retVal;
+                }
+
                 _logger.LogInformation("adding logger field");
 
                 var loggerField = FieldDeclaration(
@@ -187,6 +196,10 @@ namespace LoggerInspector
                     );
 
                 node = node.WithBody(node.Body.AddStatements(loggerAssignExpression));
+
+                // add into updated list
+                var className = node.Identifier.Text;
+                _updateClasses.Add(className);
             }
 
             return base.VisitConstructorDeclaration(node);
