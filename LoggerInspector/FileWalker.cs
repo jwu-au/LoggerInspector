@@ -255,7 +255,8 @@ namespace LoggerInspector
                                         kind == SyntaxKind.InterpolatedStringExpression ||
                                         kind == SyntaxKind.AddExpression ||
                                         kind == SyntaxKind.IdentifierName ||
-                                        kind == SyntaxKind.SimpleMemberAccessExpression);
+                                        kind == SyntaxKind.SimpleMemberAccessExpression ||
+                                        kind == SyntaxKind.InvocationExpression);
                             });
                         var messageArgumentExpressionKind = messageArgumentSyntax.Expression.Kind();
 
@@ -338,7 +339,8 @@ namespace LoggerInspector
                         }
 
                         if (messageArgumentExpressionKind == SyntaxKind.IdentifierName ||
-                            messageArgumentExpressionKind == SyntaxKind.SimpleMemberAccessExpression)
+                            messageArgumentExpressionKind == SyntaxKind.SimpleMemberAccessExpression ||
+                            messageArgumentExpressionKind == SyntaxKind.InvocationExpression)
                         {
                             var str = messageArgumentSyntax.Expression.ToString();
                             _logger.LogInformation("adding message param: {message}", str);
