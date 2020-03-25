@@ -39,20 +39,44 @@ namespace LoggerInspector
             while (true)
             {
                 logger.LogInformation("input file path or [Enter] to exit");
-                var filePath = Console.ReadLine();
-                while (!string.IsNullOrEmpty(filePath) && !File.Exists(filePath))
-                {
-                    logger.LogWarning("file path '{filePath}' not found, try again", filePath);
-                    filePath = Console.ReadLine();
-                }
+                var path = Console.ReadLine();
 
-                if (string.IsNullOrEmpty(filePath))
+                // exit
+                if (string.IsNullOrEmpty(path))
                 {
                     logger.LogInformation("exiting...");
                     return;
                 }
 
-                await fileInspector.Inspect(filePath);
+                // check files
+                var isDir = Directory.Exists(path);
+                while (!string.IsNullOrEmpty(path) && !isDir && !File.Exists(path))
+                {
+                    logger.LogWarning("path '{path}' not found, try again", path);
+                    path = Console.ReadLine();
+                }
+
+                // collect files
+                var paths = new[] {path};
+                if (isDir)
+                {
+                    paths = Directory.GetFiles(path, "*.cs", SearchOption.AllDirectories);
+                    if (paths.Length > 0)
+                    {
+                        logger.LogInformation("found {count} cs file(s) in '{path}'", paths.Length, path);
+                    }
+                    else
+                    {
+                        logger.LogWarning("found no cs file in '{path}'", path);
+                        continue;
+                    }
+                }
+
+                // inspect files
+                foreach (var filePath in paths)
+                {
+                    await fileInspector.Inspect(filePath);
+                }
             }
         }
     }
