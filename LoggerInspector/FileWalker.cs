@@ -368,7 +368,7 @@ namespace LoggerInspector
                         }
 
                         _logger.LogInformation("refactored: {statement}", expression.ToString());
-                        _logger.LogInformation("└────────────" + new string('─', (int) Math.Floor(Math.Log10(_counter) + 1)) + "────────────┘");
+                        _logger.LogInformation("└────────────{counterText}────────────┘", new string('─', (int) Math.Floor(Math.Log10(_counter) + 1)));
 
                         return node.WithExpression(expression);
                     }
