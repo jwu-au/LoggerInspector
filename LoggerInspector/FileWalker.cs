@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -243,9 +244,19 @@ namespace LoggerInspector
                         }
 
                         // find message parameter
-                        var messageArgumentSyntax = argumentList.Arguments.First(x => x.Expression.Kind() == SyntaxKind.StringLiteralExpression || x.Expression.Kind() == SyntaxKind.InterpolatedStringExpression);
+                        var messageArgumentSyntax = argumentList.Arguments
+                            .First(x =>
+                            {
+                                var typeName = SemanticModel.GetTypeInfo(x.Expression).Type.Name;
+                                var kind = x.Expression.Kind();
+                                return typeName == nameof(String) &&
+                                       (kind == SyntaxKind.StringLiteralExpression ||
+                                        kind == SyntaxKind.InterpolatedStringExpression ||
+                                        kind == SyntaxKind.AddExpression);
+                            });
+                        var messageArgumentExpressionKind = messageArgumentSyntax.Expression.Kind();
 
-                        if (messageArgumentSyntax.Expression.Kind() == SyntaxKind.StringLiteralExpression)
+                        if (messageArgumentExpressionKind == SyntaxKind.StringLiteralExpression)
                         {
                             var messageArgumentIndex = argumentList.Arguments.IndexOf(messageArgumentSyntax);
                             var str = messageArgumentSyntax.Expression.GetFirstToken().ValueText;
@@ -284,7 +295,7 @@ namespace LoggerInspector
                             }
                         }
 
-                        if (messageArgumentSyntax.Expression.Kind() == SyntaxKind.InterpolatedStringExpression)
+                        if (messageArgumentExpressionKind == SyntaxKind.InterpolatedStringExpression)
                         {
                             var syntax = (InterpolatedStringExpressionSyntax) messageArgumentSyntax.Expression;
                             var str = string.Concat(syntax.Contents.Select(x => x.ToString()));
@@ -315,6 +326,13 @@ namespace LoggerInspector
                                 _logger.LogInformation("adding other param: {param}", argumentSyntax.Expression.ToString());
                                 newArgList = newArgList.AddArguments(argumentSyntax);
                             }
+                        }
+
+                        if (messageArgumentExpressionKind == SyntaxKind.AddExpression)
+                        {
+                            var str = messageArgumentSyntax.Expression.ToString();
+                            _logger.LogWarning("adding message param with string concat: {message}", str);
+                            newArgList = newArgList.AddArguments(messageArgumentSyntax);
                         }
 
                         var expression = InvocationExpression(
