@@ -95,7 +95,7 @@ namespace LoggerInspector
             _logger.LogInformation("found {count} dll(s) for symbols", refs.Length);
             var metas = refs.Select(x => MetadataReference.CreateFromFile(x));
             _compilation = CSharpCompilation.Create("Logger").AddReferences(metas);
-            _logger.LogInformation("_compilation has been initialized");
+            _logger.LogInformation("compilation has been initialized");
             return true;
         }
     }
