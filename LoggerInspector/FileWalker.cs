@@ -11,7 +11,8 @@ namespace LoggerInspector
 {
     public class FileWalker : CSharpSyntaxRewriter
     {
-        private readonly IList<string> _updateClasses = new List<string>();
+        private readonly IList<string> _updatedClasses = new List<string>();
+        private bool _removedOldLogger;
         private int _counter;
 
         private readonly ILogger<FileWalker> _logger;
@@ -23,9 +24,17 @@ namespace LoggerInspector
 
         public SemanticModel SemanticModel { get; set; }
 
+        public bool IsUpdated => _updatedClasses.Count > 0 || _removedOldLogger;
+
         public override SyntaxNode? VisitCompilationUnit(CompilationUnitSyntax node)
         {
             var retVal = (CompilationUnitSyntax) base.VisitCompilationUnit(node);
+
+            if (!IsUpdated)
+            {
+                _logger.LogWarning("no updates found");
+                return retVal;
+            }
 
             const string name = "Microsoft.Extensions.Logging";
             if (retVal.Usings.All(x => x.Name.ToString() != name))
@@ -72,7 +81,7 @@ namespace LoggerInspector
             if (!exists)
             {
                 var className = node.Identifier.Text;
-                if (!_updateClasses.Contains(className))
+                if (!_updatedClasses.Contains(className))
                 {
                     _logger.LogWarning("skipping class '{className}' for adding logger field", className);
                     return retVal;
@@ -136,6 +145,7 @@ namespace LoggerInspector
             if (name == "Castle.Core.Logging")
             {
                 _logger.LogInformation("removing using {name}", name);
+                _removedOldLogger = true;
                 return null;
             }
 
@@ -148,6 +158,7 @@ namespace LoggerInspector
             if (type == "ILogger")
             {
                 _logger.LogInformation("removing old logger property");
+                _removedOldLogger = true;
                 return null;
             }
 
@@ -200,7 +211,7 @@ namespace LoggerInspector
 
                 // add into updated list
                 var className = node.Identifier.Text;
-                _updateClasses.Add(className);
+                _updatedClasses.Add(className);
             }
 
             return base.VisitConstructorDeclaration(node);
@@ -214,6 +225,7 @@ namespace LoggerInspector
                 if (isConstructorDeclaration)
                 {
                     _logger.LogInformation("removing old logger assignment expression in constructor");
+                    _removedOldLogger = true;
                     return null;
                 }
 

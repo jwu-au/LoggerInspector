@@ -78,10 +78,14 @@ namespace LoggerInspector
             var newRoot = walker.Visit(root);
 
             // write to file
-            await using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
-            newRoot.WriteTo(writer);
-            _logger.LogInformation("wrote to file {filePath}", filePath);
-            _logger.LogInformation("**********done**********");
+            if (walker.IsUpdated)
+            {
+                await using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
+                newRoot.WriteTo(writer);
+                _logger.LogInformation("wrote to file {filePath}", filePath);
+            }
+
+            _logger.LogInformation("******************** done ********************");
         }
     }
 }
