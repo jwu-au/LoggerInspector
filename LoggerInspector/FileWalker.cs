@@ -12,6 +12,7 @@ namespace LoggerInspector
     public class FileWalker : CSharpSyntaxRewriter
     {
         private readonly IList<string> _updateClasses = new List<string>();
+        private int _counter;
 
         private readonly ILogger<FileWalker> _logger;
 
@@ -221,7 +222,7 @@ namespace LoggerInspector
                 {
                     if (node.Expression.Kind() == SyntaxKind.InvocationExpression)
                     {
-                        _logger.LogInformation("┌─────────────────────────┐");
+                        _logger.LogInformation("┌────────────{counter}────────────┐", ++_counter);
                         _logger.LogInformation("refactoring: {expression}", node.ToString());
 
 
@@ -367,7 +368,7 @@ namespace LoggerInspector
                         }
 
                         _logger.LogInformation("refactored: {statement}", expression.ToString());
-                        _logger.LogInformation("└─────────────────────────┘");
+                        _logger.LogInformation("└────────────" + new string('─', (int) Math.Floor(Math.Log10(_counter) + 1)) + "────────────┘");
 
                         return node.WithExpression(expression);
                     }
