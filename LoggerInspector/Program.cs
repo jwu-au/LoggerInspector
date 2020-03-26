@@ -14,6 +14,7 @@ namespace LoggerInspector
         {
             // logging
             var logger = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
                 .WriteTo.Debug()
                 .WriteTo.Console()
                 .CreateLogger();

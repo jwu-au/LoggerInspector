@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -289,9 +290,9 @@ namespace LoggerInspector
                                 {
                                     var arg = argumentList.Arguments[argIndex];
                                     argumentsToAdd.Add(arg);
-                                    var propertyStr = "{" + arg.Expression.ToString().Replace(".", "") + "}";
+                                    var propertyStr = "{" + Regex.Replace(arg.Expression.ToString(), "[^A-Za-z0-9 -]", "") + "}";
 
-                                    _logger.LogInformation("replacing {indexStr} to {propertyStr}", indexStr, propertyStr);
+                                    _logger.LogDebug("replacing {indexStr} to {propertyStr}", indexStr, propertyStr);
                                     str = str.Replace(indexStr, propertyStr);
                                 }
 
@@ -323,11 +324,13 @@ namespace LoggerInspector
                                 var name = interpolationSyntax.Expression.ToString();
                                 var arg = Argument(IdentifierName(name));
 
-                                var propertyStr = name.Replace(".", "");
+                                var propertyStr = Regex.Replace(name, "[^A-Za-z0-9 -]", "");
                                 if (name != propertyStr)
                                 {
-                                    _logger.LogInformation("replacing {interpolationStr} to {propertyStr}", name, propertyStr);
-                                    str = str.Replace("{" + name + "}", "{" + propertyStr + "}");
+                                    name = $"{{{name}}}";
+                                    propertyStr = $"{{{propertyStr}}}";
+                                    _logger.LogDebug("replacing {interpolationStr} to {propertyStr}", name, propertyStr);
+                                    str = str.Replace(name, propertyStr);
                                 }
 
                                 argumentsToAdd.Add(arg);
