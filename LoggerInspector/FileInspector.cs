@@ -47,8 +47,11 @@ namespace LoggerInspector
             // write to file
             if (walker.IsUpdated)
             {
-                await using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
-                newRoot.WriteTo(writer);
+                await using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                {
+                    newRoot.WriteTo(writer);
+                }
+
                 _logger.LogInformation("wrote to file {filePath}", filePath);
             }
 
