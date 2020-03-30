@@ -290,7 +290,7 @@ namespace LoggerInspector
                                 {
                                     var arg = argumentList.Arguments[argIndex];
                                     argumentsToAdd.Add(arg);
-                                    var propertyStr = "{" + Regex.Replace(arg.Expression.ToString(), "[^A-Za-z0-9 -]", "") + "}";
+                                    var propertyStr = "{" + Regex.Replace(arg.Expression.ToString(), "[^A-Za-z0-9]", "") + "}";
 
                                     _logger.LogDebug("replacing {indexStr} to {propertyStr}", indexStr, propertyStr);
                                     str = str.Replace(indexStr, propertyStr);
@@ -324,7 +324,7 @@ namespace LoggerInspector
                                 var name = interpolationSyntax.Expression.ToString();
                                 var arg = Argument(IdentifierName(name));
 
-                                var propertyStr = Regex.Replace(name, "[^A-Za-z0-9 -]", "");
+                                var propertyStr = Regex.Replace(name, "[^A-Za-z0-9]", "");
                                 if (name != propertyStr)
                                 {
                                     name = $"{{{name}}}";
