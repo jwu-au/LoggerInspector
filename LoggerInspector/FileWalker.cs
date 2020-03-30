@@ -154,8 +154,9 @@ namespace LoggerInspector
 
         public override SyntaxNode? VisitPropertyDeclaration(PropertyDeclarationSyntax node)
         {
-            var type = node.Type.ToString();
-            if (type == "ILogger")
+            var propType = node.Type.ToString();
+            var propName = node.Identifier.ValueText;
+            if (propType == "ILogger" && propName == "Logger")
             {
                 _logger.LogInformation("removing old logger property");
                 _removedOldLogger = true;
