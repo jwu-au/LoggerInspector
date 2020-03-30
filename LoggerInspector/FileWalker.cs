@@ -12,7 +12,6 @@ namespace LoggerInspector
 {
     public class FileWalker : CSharpSyntaxRewriter
     {
-        private readonly IList<string> _updatedClasses = new List<string>();
         private bool _removedOldLogger;
         private int _counter;
 
@@ -25,7 +24,7 @@ namespace LoggerInspector
 
         public SemanticModel SemanticModel { get; set; }
 
-        public bool IsUpdated => _updatedClasses.Count > 0 || _removedOldLogger;
+        public bool IsUpdated => _counter > 0 || _removedOldLogger;
 
         public override SyntaxNode? VisitCompilationUnit(CompilationUnitSyntax node)
         {
@@ -38,7 +37,7 @@ namespace LoggerInspector
             }
 
             const string name = "Microsoft.Extensions.Logging";
-            if (retVal.Usings.All(x => x.Name.ToString() != name))
+            if (_counter > 0 && retVal.Usings.All(x => x.Name.ToString() != name))
             {
                 _logger.LogInformation("adding new using {name}", name);
 
@@ -76,13 +75,13 @@ namespace LoggerInspector
         public override SyntaxNode? VisitClassDeclaration(ClassDeclarationSyntax node)
         {
             var retVal = (ClassDeclarationSyntax) base.VisitClassDeclaration(node);
-            var fieldDeclarationSyntaxes = retVal.Members.OfType<FieldDeclarationSyntax>().ToList();
 
+            var fieldDeclarationSyntaxes = retVal.Members.OfType<FieldDeclarationSyntax>().ToList();
             var exists = fieldDeclarationSyntaxes.Any(x => x.Declaration.Variables.Any(y => y.ToString() == "_logger"));
             if (!exists)
             {
                 var className = node.Identifier.Text;
-                if (!_updatedClasses.Contains(className))
+                if (!HasLoggerUsage(node))
                 {
                     _logger.LogWarning("skipping class '{className}' for adding logger field", className);
                     return retVal;
@@ -170,7 +169,14 @@ namespace LoggerInspector
         {
             if (node.ParameterList.Parameters.All(x => x.Identifier.Text != "logger"))
             {
-                _logger.LogInformation("updating new logger constructor parameter");
+                if (!HasLoggerUsage(node.Parent))
+                {
+                    var className = node.Identifier.ValueText;
+                    _logger.LogWarning("skipping class '{className}' for adding new logger constructor parameter", className);
+                    return base.VisitConstructorDeclaration(node);
+                }
+
+                _logger.LogInformation("adding new logger constructor parameter");
 
                 var loggerParameter = Parameter(Identifier(TriviaList(Space), "logger", TriviaList()))
                     .WithType(
@@ -209,10 +215,6 @@ namespace LoggerInspector
                     );
 
                 node = node.WithBody(node.Body.AddStatements(loggerAssignExpression));
-
-                // add into updated list
-                var className = node.Identifier.Text;
-                _updatedClasses.Add(className);
             }
 
             return base.VisitConstructorDeclaration(node);
@@ -413,6 +415,16 @@ namespace LoggerInspector
             if (symbol == null) return false;
             if (symbol.Name.EndsWith(nameof(Exception))) return true;
             return IsException(symbol.BaseType);
+        }
+
+        private bool HasLoggerUsage(SyntaxNode node)
+        {
+            var retVal = node.DescendantNodes().OfType<InvocationExpressionSyntax>()
+                .Any(x =>
+                    x.GetFirstToken().ValueText == "Logger" &&
+                    x.Ancestors().Any(y => y.Kind() == SyntaxKind.MethodDeclaration)
+                );
+            return retVal;
         }
     }
 }
