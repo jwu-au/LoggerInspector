@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -39,24 +40,26 @@ namespace LoggerInspector
         {
             while (true)
             {
-                logger.LogInformation("input file or folder path or [Enter] to exit");
-                var path = Console.ReadLine();
-
-                // exit
-                if (string.IsNullOrEmpty(path))
+                // input
+                bool isDir, isFile, found;
+                string path;
+                do
                 {
-                    logger.LogInformation("exiting...");
-                    return;
-                }
-
-                // check files
-                var isDir = Directory.Exists(path);
-                while (!string.IsNullOrEmpty(path) && !isDir && !File.Exists(path))
-                {
-                    logger.LogWarning("path '{path}' not found, try again", path);
+                    logger.LogInformation("input file/folder path or [Enter] to exit");
                     path = Console.ReadLine();
+
+                    // exit
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        goto exit;
+                    }
+
+                    // check
                     isDir = Directory.Exists(path);
-                }
+                    isFile = File.Exists(path);
+                    found = isDir || isFile;
+                    if (!found) logger.LogWarning("not found path '{path}'", path);
+                } while (!found);
 
                 // collect files
                 var paths = new[] {path};
@@ -80,6 +83,9 @@ namespace LoggerInspector
                     await fileInspector.Inspect(filePath);
                 }
             }
+
+            exit:
+            logger.LogInformation("exiting...");
         }
     }
 }

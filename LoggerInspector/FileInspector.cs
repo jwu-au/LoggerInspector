@@ -82,7 +82,7 @@ namespace LoggerInspector
 
             if (lastIndexOfSrc == -1)
             {
-                _logger.LogError("drachma bin folder not found as per file '{filePath}}'", filePath);
+                _logger.LogError("drachma bin folder not found as per file '{filePath}'", filePath);
                 return false;
             }
 
