@@ -233,8 +233,12 @@ namespace LoggerInspector
                     return null;
                 }
 
-                var isMethodDeclaration = node.AncestorsAndSelf().Any(x => x.Kind() == SyntaxKind.MethodDeclaration);
-                if (isMethodDeclaration)
+                var isMethodOrPropertyDeclaration = node.AncestorsAndSelf().Any(x =>
+                {
+                    var kind = x.Kind();
+                    return kind == SyntaxKind.MethodDeclaration || kind == SyntaxKind.PropertyDeclaration;
+                });
+                if (isMethodOrPropertyDeclaration)
                 {
                     if (node.Expression.Kind() == SyntaxKind.InvocationExpression)
                     {
@@ -423,7 +427,7 @@ namespace LoggerInspector
             var retVal = node.DescendantNodes().OfType<InvocationExpressionSyntax>()
                 .Any(x =>
                     x.GetFirstToken().ValueText == "Logger" &&
-                    x.Ancestors().Any(y => y.Kind() == SyntaxKind.MethodDeclaration)
+                    x.Ancestors().Any(y => y.Kind() == SyntaxKind.MethodDeclaration || y.Kind() == SyntaxKind.PropertyDeclaration)
                 );
             return retVal;
         }
